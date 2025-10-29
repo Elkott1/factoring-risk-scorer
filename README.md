@@ -9,7 +9,6 @@ factoring-risk-scorer/
 │
 ├── models/               # Saved trained models (.pkl)
 │
-├── reports/              # Confusion matrix and ROC curve plots
 │
 ├── notebooks/            # Exploratory notebooks
 │
