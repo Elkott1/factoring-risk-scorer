@@ -1,20 +1,33 @@
+from pathlib import Path
+import pandas as pd
+import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, roc_auc_score, average_precision_score
-import pandas as pd
-import joblib
-from pathlib import Path
+from sklearn.metrics import (
+    classification_report,
+    roc_auc_score,
+    average_precision_score,
+    ConfusionMatrixDisplay,
+    RocCurveDisplay
+)
+import matplotlib.pyplot as plt
 
 df = pd.read_csv("data/plat/invoices_plat.csv")
 
-# Features available at issuance only
-X = df[["countryCode", "InvoiceAmount", "PaperlessBill", "InvoiceDay", "InvoiceMonth"]].copy()
+X = df[[
+    "countryCode",
+    "InvoiceAmount",
+    "PaperlessBill",
+    "TotalInvoices",
+    "PaidLateCount",
+    "LateRatio"
+]].copy()
 y = df["PaidLate"].astype(int)
 
-num_cols = ["InvoiceAmount"]
+num_cols = ["InvoiceAmount", "TotalInvoices", "PaidLateCount", "LateRatio"]
 cat_cols = ["countryCode", "PaperlessBill"]
 
 pre = ColumnTransformer(
@@ -37,11 +50,20 @@ pipe.fit(X_train, y_train)
 y_pred = pipe.predict(X_test)
 y_prob = pipe.predict_proba(X_test)[:, 1]
 
+Path("models").mkdir(parents=True, exist_ok=True)
+joblib.dump(pipe, "models/risk_model.pkl")
+
 print(classification_report(y_test, y_pred))
 print("ROC AUC:", round(roc_auc_score(y_test, y_prob), 4))
 print("PR AUC:", round(average_precision_score(y_test, y_prob), 4))
 
-Path("data/models").mkdir(parents=True, exist_ok=True)
-# Save whole pipeline so Flask can load once and score
-joblib.dump(pipe, "data/models/risk_model.pkl")
-print("Saved model to data/models/risk_model.pkl")
+ConfusionMatrixDisplay.from_estimator(pipe, X_test, y_test, cmap="Blues")
+plt.title("Confusion Matrix")
+plt.show()
+
+RocCurveDisplay.from_estimator(pipe, X_test, y_test)
+plt.title("ROC Curve")
+plt.show()
+
+
+print("Saved model to models/risk_model.pkl")

@@ -4,13 +4,14 @@ import pandas as pd
 
 app = Flask(__name__)
 
-model = joblib.load("data/models/rf_model.pkl")
+model = joblib.load("models/rf_model.pkl")
 
 @app.route("/predict", methods=["POST"])
 def predict():
     data = request.get_json()
 
-    expected_keys = ["countryCode", "InvoiceAmount", "PaperlessBill", "InvoiceDay", "InvoiceMonth"]
+    expected_keys = ["countryCode", "InvoiceAmount", "PaperlessBill", "TotalInvoices", "PaidLateCount", "LateRatio"]
+
     for key in expected_keys:
         if key not in data:
             return jsonify({"error": f"Missing key: {key}"}), 400
